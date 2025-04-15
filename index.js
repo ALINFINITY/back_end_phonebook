@@ -43,7 +43,7 @@ app.use(express.json());
 
 //CORS:
 const corspolicy = {
-  origin: ["https://back-end-phonebook.onrender.com"],
+  origin: "https://back-end-phonebook.onrender.com",
 };
 
 app.use(cors(corspolicy));
