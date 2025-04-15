@@ -50,8 +50,10 @@ const whithelist = [
 
 const corsvalidate = (req, callback) => {
   let corspolicy;
+  console.log("Header-------------\n", req.header("origin"));
+
   if (whithelist.includes(req.header("origin"))) {
-    console.log("-------------\n", req.header("origin"));
+    console.log("Header-------------\n", req.header("origin"));
     corspolicy = { origin: true };
     callback(null, corspolicy);
   } else {
