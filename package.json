@@ -1,0 +1,22 @@
+{
+  "name": "3.1_3.6_phonebook",
+  "version": "1.0.0",
+  "description": "A Phonebook Application",
+  "license": "ISC",
+  "author": "lgn",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
