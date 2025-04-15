@@ -43,10 +43,13 @@ app.use(express.json());
 
 //CORS:
 const corspolicy = {
-  origin: ["*"],
+  origin: "https://back-end-phonebook.onrender.com/",
 };
 
 app.use(cors(corspolicy));
+
+//Static: React - App 
+app.use(express.static("./dist"))
 
 //Morgan tiny
 app.use(morgan("tiny"));
