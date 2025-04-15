@@ -42,11 +42,25 @@ let persons = [
 app.use(express.json());
 
 //CORS:
-const corspolicy = {
-  origin: "https://back-end-phonebook.onrender.com",
+const whithelist = [
+  "https://back-end-phonebook.onrender.com",
+  "http://localhost:3001",
+  "http://localhost:5173",
+];
+
+const corsvalidate = (req, callback) => {
+  let corspolicy;
+  if (whithelist.includes(req.header("origin"))) {
+    console.log("-------------\n", req.header("origin"));
+    corspolicy = { origin: true };
+    callback(null, corspolicy);
+  } else {
+    corspolicy = { origin: false };
+    callback("Acces denied!", corspolicy);
+  }
 };
 
-app.use(cors(corspolicy));
+app.use(cors(corsvalidate));
 
 //Static: React - App
 app.use(express.static("./dist"));
