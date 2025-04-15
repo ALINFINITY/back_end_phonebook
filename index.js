@@ -46,7 +46,7 @@ const corspolicy = {
   origin: "https://back-end-phonebook.onrender.com/",
 };
 
-app.use(cors(corsvalidate));
+app.use(cors(corspolicy));
 
 //Static: React - App
 app.use(express.static("./dist"));
