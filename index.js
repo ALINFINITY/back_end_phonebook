@@ -42,7 +42,7 @@ let persons = [
 app.use(express.json());
 
 //CORS:
-const whitelist = ["https://back-end-phonebook.onrender.com", "http://localhost:5173"];
+const whitelist = ["https://back-end-phonebook.onrender.com", "http://localhost:5173","http://localhost:3001"];
 
 const originfirewall = (origin, callback) => {
   if (whitelist.includes(origin)) {
