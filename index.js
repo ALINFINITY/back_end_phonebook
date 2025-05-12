@@ -1,6 +1,13 @@
 //Use Express
 const express = require("express");
 const app = express();
+
+//Use dotenv
+require("dotenv").config();
+
+//Contact model
+const Contact = require("./models/phonebook");
+
 //Use CORS
 const cors = require("cors");
 
@@ -8,34 +15,10 @@ const cors = require("cors");
 const morgan = require("morgan");
 
 //APP
-const Port = process.env.PORT || 3001;
+const Port = process.env.PORT || 3002;
 app.listen(Port, () => {
   console.log(`Server running on port: ${Port}`);
 });
-
-//Data:
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
 
 //Middleware:
 //Json-Parser
@@ -81,51 +64,54 @@ app.use(morgan(":method :url :response-time ms :body"));
 //Server EndPoints - Route Controllers:
 //Get:
 app.get("/api/persons", (request, response) => {
-  response.json(persons);
+  Contact.find({}).then((result) => {
+    response.json(result);
+  });
 });
 
 app.get("/info", (request, response) => {
   const date = new Date();
-  const info = `
+  Contact.countDocuments({}).then((result) => {
+    const info = `
     <h2>PhoneBook Info</h2>
-    <p>Phonebook has info for ${persons.length} persons</p>
+    <p>Phonebook has info for ${result} persons</p>
     <p>${date}</p>
     `;
-  response.send(info);
+    response.send(info);
+  });
 });
 
-app.get("/api/persons/:id", (request, response) => {
-  const id = parseInt(request.params.id);
-  const person = persons.find((p) => p.id === id);
-  if (!person) {
-    response.statusMessage = "Person not found";
-    return response.status(404).json({
-      status: "Not found",
-    });
-  }
-  response.json(person);
+app.get("/api/persons/:id", (request, response, next) => {
+  const id = request.params.id;
+  if (id.length != 24) return response.status(400).json({ Error: "Bad id!" });
+  Contact.findById(id)
+    .then((result) => {
+      if (!result) {
+        response.statusMessage = "Person not found";
+        return response.status(404).json({
+          status: "Not found",
+        });
+      }
+      return response.json(result);
+    })
+    .catch((e) => next(e));
 });
 
 //Delete:
-app.delete("/api/persons/:id", (request, response) => {
-  const id = parseInt(request.params.id);
-  const person = persons.find((p) => p.id === id);
-  if (!person) return response.status(404).json({ status: "not found" });
-  persons = persons.filter((p) => p.id !== id);
-  //console.log(persons);
-  response.statusMessage = "Deleted successfully!";
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  const id = request.params.id;
+  Contact.findByIdAndDelete(id)
+    .then((result) => {
+      if (result) {
+        response.statusMessage = "Deleted successfully";
+        response.status(204).end();
+      }
+      response.status(404).end();
+    })
+    .catch((error) => next(error));
 });
 
 //Post
-//Functions - Validations and ID Generator
-const randomID = () => {
-  const min = 1,
-    max = 1000;
-
-  return Math.floor(Math.random() * (max - min) + min);
-};
-
 const validations = (name, number) => {
   if (!name || !number || !name.trim() || !number.trim()) {
     return {
@@ -134,20 +120,6 @@ const validations = (name, number) => {
       status: "Mising values",
     };
   }
-  const personbyname = persons.find((p) => p.name === name);
-  if (personbyname)
-    return {
-      statusError: true,
-      message: "Name must be unique",
-      status: "Duplicate name",
-    };
-  const personbynumber = persons.find((p) => p.number === number);
-  if (personbynumber)
-    return {
-      statusError: true,
-      message: "Number already exist",
-      status: "Duplicate number",
-    };
   const regex = /^[0-9\-]+$/;
   if (!regex.test(number))
     return {
@@ -159,7 +131,7 @@ const validations = (name, number) => {
 };
 
 //Post:
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
   const val = validations(body.name, body.number);
 
@@ -168,12 +140,66 @@ app.post("/api/persons", (request, response) => {
     return response.status(400).json({ error: val.message });
   }
 
-  const newPerson = {
-    id: randomID(),
+  const contactSv = new Contact({
+    name: body.name,
+    number: body.number,
+  });
+
+  contactSv
+    .save()
+    .then((result) => {
+      response.json(result);
+    })
+    .catch((error) => next(error));
+});
+
+app.put("/api/persons/:id", (request, response, next) => {
+  const id = request.params.id;
+  const body = request.body;
+
+  const upContact = {
     name: body.name,
     number: body.number,
   };
-  persons = [...persons, newPerson];
-  //console.log(persons);
-  response.json(newPerson);
+
+  Contact.findByIdAndUpdate(id, upContact, {
+    new: true,
+    runValidators: true,
+    context: "query",
+  })
+    .then((result) => {
+      response.json(result);
+    })
+    .catch((error) => next(error));
 });
+
+//Unknown Endpoints Middleware
+const unknownEndpoint = (request, response) => {
+  response.status(404).json({
+    status: "Unknown Endpoint",
+  });
+};
+app.use(unknownEndpoint);
+
+//Last middleware - Error Handler
+const ErrorHandler = (error, request, response, next) => {
+  console.log(error.message);
+
+  switch (error.name) {
+    case "CastError":
+      return response.status(400).json({ status: "malformatted ID" });
+      break;
+    case "ValidationError":
+      return response.status(400).json({ status: error.message });
+      break;
+    default:
+      return response
+        .status(500)
+        .json({ status: "Server error, try later..." });
+      break;
+  }
+
+  next(error);
+};
+
+app.use(ErrorHandler);
